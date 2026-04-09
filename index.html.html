@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>¿Cuál es tu pecado digital?</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+:root { --sin-color: #8b0000; --sin-glow: #c00020; }
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{min-height:100vh;background:#06000a;color:#f0e6e6;font-family:'Cormorant Garamond',Georgia,serif;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(139,0,20,0.15),transparent 70%);pointer-events:none;z-index:0;animation:breathe 5s ease-in-out infinite;}
+@keyframes breathe{0%,100%{opacity:.7}50%{opacity:1}}
+.stage{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:40px 20px 60px;text-align:center;}
+.top-label{font-size:10px;letter-spacing:6px;text-transform:uppercase;color:rgba(200,100,100,0.7);margin-bottom:8px;}
+h1{font-family:'Playfair Display',serif;font-size:clamp(14px,3.5vw,18px);font-weight:400;font-style:italic;color:rgba(240,230,230,0.55);letter-spacing:3px;margin-bottom:32px;}
+.wheel-container{position:relative;width:min(320px,85vw);height:min(320px,85vw);margin:0 auto 28px;}
+.wheel-pointer{position:absolute;top:-18px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:22px solid #8b0000;z-index:10;}
+canvas#wheel{border-radius:50%;box-shadow:0 0 30px rgba(139,0,20,0.3);display:block;width:100%;height:100%;}
+.wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:#06000a;border:2px solid rgba(180,60,60,0.5);display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(200,100,100,0.6);z-index:5;transition:all 0.5s;}
+.wheel-center.revealed{border-color:var(--sin-color);color:var(--sin-color);box-shadow:0 0 14px var(--sin-glow);}
+.spin-btn{background:#8b0000;color:#f0e0e0;border:none;border-radius:2px;padding:14px 44px;font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;letter-spacing:3px;cursor:pointer;transition:all .3s;margin-bottom:32px;box-shadow:0 0 20px rgba(139,0,0,0.4);}
+.spin-btn:hover{filter:brightness(1.2);transform:scale(1.02);}
+.spin-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.result{display:none;animation:riseUp .8s cubic-bezier(.16,1,.3,1);max-width:420px;}
+.result.show{display:block;}
+@keyframes riseUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.result-ornament{font-size:28px;color:var(--sin-color);margin-bottom:8px;text-shadow:0 0 16px var(--sin-glow);}
+.result-name{font-family:'Playfair Display',serif;font-size:clamp(42px,10vw,72px);font-style:italic;font-weight:700;color:#fff;line-height:1;margin-bottom:4px;}
+.result-latin{font-size:11px;letter-spacing:5px;text-transform:uppercase;color:var(--sin-color);margin-bottom:20px;}
+.divider{width:50px;height:1px;background:var(--sin-color);margin:0 auto 20px;box-shadow:0 0 6px var(--sin-glow);}
+.result-desc{font-size:clamp(15px,3vw,18px);font-style:italic;font-weight:300;color:rgba(240,220,220,0.85);line-height:1.8;}
+.again-btn{margin-top:28px;background:transparent;border:1px solid rgba(180,60,60,0.4);color:rgba(220,160,160,0.7);border-radius:2px;padding:10px 32px;font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;letter-spacing:2px;cursor:pointer;transition:all .3s;}
+.again-btn:hover{border-color:var(--sin-color);color:#fff;}
+.footer{margin-top:48px;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:rgba(240,220,220,0.15);}
+</style>
+</head>
+<body>
+<main class="stage">
+  <div class="top-label">¿cuál es tu pecado digital?</div>
+  <h1>la ruleta del destino ha sido invocada</h1>
+  <div class="wheel-container">
+    <div class="wheel-pointer"></div>
+    <canvas id="wheel" width="600" height="600"></canvas>
+    <div class="wheel-center" id="center">✦</div>
+  </div>
+  <button class="spin-btn" id="spinBtn" onclick="startSpin()">girar la ruleta</button>
+  <div class="result" id="result">
+    <div class="result-ornament" id="r-symbol"></div>
+    <div class="result-name" id="r-name"></div>
+    <div class="result-latin" id="r-latin"></div>
+    <div class="divider"></div>
+    <div class="result-desc" id="r-desc"></div>
+    <button class="again-btn" onclick="spinAgain()">girar de nuevo</button>
+  </div>
+  <div class="footer">pecados digitales · exhibición</div>
+</main>
+<script>
+const SINS = [{"name": "Lujuria", "latin": "Luxuria", "color": "#c2185b", "glow": "#ff4081", "desc": "Tu deseo digital no tiene límites. Buscas lo prohibido, lo oculto, lo que no deberías ver. Las pantallas guardan tus secretos más íntimos.", "symbol": "♥"}, {"name": "Gula", "latin": "Gula", "color": "#bf360c", "glow": "#ff6e40", "desc": "Consumes sin hambre, sin pausa, sin culpa. El binge interminable, el scroll sin fondo. Tu apetito digital no tiene saciedad.", "symbol": "⬟"}, {"name": "Pereza", "latin": "Acedia", "color": "#4a148c", "glow": "#ce93d8", "desc": "Tus tareas esperan. Tus mensajes sin responder se acumulan. Prefieres la comodidad infinita del feed al esfuerzo de vivir.", "symbol": "☽"}, {"name": "Envidia", "latin": "Invidia", "color": "#1b5e20", "glow": "#69f0ae", "desc": "Observas en silencio lo que otros tienen. Cada like ajeno es una herida. El stalkeo nocturno es tu penitencia favorita.", "symbol": "◈"}, {"name": "Ira", "latin": "Ira", "color": "#b71c1c", "glow": "#ff5252", "desc": "Tus dedos escriben lo que tu boca no se atreve. La rabia digital fluye sin filtro. El teclado es tu arma predilecta.", "symbol": "⚡"}, {"name": "Avaricia", "latin": "Avaritia", "color": "#f57f17", "glow": "#ffd740", "desc": "Coleccionas seguidores, likes, datos. Nada es suficiente. Tu riqueza digital crece pero el vacío también.", "symbol": "◆"}, {"name": "Soberbia", "latin": "Superbia", "color": "#0d47a1", "glow": "#82b1ff", "desc": "Tu perfil es tu altar. Cuidas cada pixel de tu imagen. La aprobación de desconocidos alimenta tu ego sin fondo.", "symbol": "♛"}];
+const N = SINS.length;
+const ARC = (Math.PI*2)/N;
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const W=600,CX=W/2,CY=W/2,R=W/2-8;
+
+const NEUTRAL_FILLS = ['#1c0808','#180a0a','#1a0707','#160909','#1b0808','#190909','#170b0b'];
+const NEUTRAL_TEXT = 'rgba(220,170,170,0.65)';
+
+// Pick the destiny ONCE per session — random, sealed forever
+const DESTINY = Math.floor(Math.random() * N);
+let sinColor = SINS[DESTINY].color;
+let sinGlow  = SINS[DESTINY].glow;
+
+let currentAngle = 0;
+let spinning = false;
+let hasRevealed = false;
+let spinCount = 0;
+
+function drawWheel(rotation, revealed) {
+  ctx.clearRect(0,0,W,W);
+  for(let i=0;i<N;i++) {
+    const startAngle = rotation + i*ARC - Math.PI/2;
+    const endAngle = startAngle + ARC;
+    ctx.beginPath();
+    ctx.moveTo(CX,CY);
+    ctx.arc(CX,CY,R,startAngle,endAngle);
+    ctx.closePath();
+    ctx.fillStyle = (revealed && i===DESTINY) ? sinColor : NEUTRAL_FILLS[i%NEUTRAL_FILLS.length];
+    ctx.fill();
+    ctx.strokeStyle='rgba(255,180,180,0.10)';
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(CX,CY);
+    ctx.rotate(startAngle+ARC/2);
+    ctx.textAlign='right';
+    if(revealed && i===DESTINY){
+      ctx.fillStyle='#fff';
+      ctx.font='bold 22px "Playfair Display",serif';
+    } else {
+      ctx.fillStyle=NEUTRAL_TEXT;
+      ctx.font='18px "Cormorant Garamond",serif';
+    }
+    ctx.fillText(SINS[i].name, R-18, 6);
+    ctx.restore();
+  }
+  ctx.beginPath();
+  ctx.arc(CX,CY,R,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,160,160,0.15)';
+  ctx.lineWidth=3;
+  ctx.stroke();
+}
+
+function getTargetAngle() {
+  // Always lands on DESTINY. Add more spins each time for drama.
+  const base = -DESTINY*ARC - ARC/2;
+  const spins = (5 + spinCount*2 + Math.floor(Math.random()*2)) * Math.PI*2;
+  return base - spins;
+}
+
+function easeOut(t){ return 1-Math.pow(1-t,4); }
+
+function startSpin() {
+  if(spinning) return;
+  spinning = true;
+  hasRevealed = false;
+  document.getElementById('spinBtn').disabled = true;
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('center').classList.remove('revealed');
+  document.getElementById('center').textContent = '✦';
+
+  const finalAngle = getTargetAngle();
+  const duration = 4200 + Math.random()*1000;
+  const start = performance.now();
+  const startAngle = currentAngle;
+
+  function frame(now) {
+    const t = Math.min((now-start)/duration,1);
+    currentAngle = startAngle + (finalAngle-startAngle)*easeOut(t);
+    drawWheel(currentAngle, false);
+    if(t<1) {
+      requestAnimationFrame(frame);
+    } else {
+      currentAngle = finalAngle;
+      drawWheel(currentAngle, true);
+      spinning = false;
+      spinCount++;
+      reveal();
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+function reveal() {
+  const s = SINS[DESTINY];
+  document.documentElement.style.setProperty('--sin-color', s.color);
+  document.documentElement.style.setProperty('--sin-glow', s.glow);
+  document.getElementById('r-symbol').textContent = s.symbol;
+  document.getElementById('r-name').textContent = s.name;
+  document.getElementById('r-latin').textContent = s.latin;
+  document.getElementById('r-desc').textContent = s.desc;
+  document.getElementById('center').textContent = s.symbol;
+  document.getElementById('center').classList.add('revealed');
+  setTimeout(()=>{ document.getElementById('result').classList.add('show'); }, 400);
+}
+
+function spinAgain() {
+  document.getElementById('spinBtn').disabled = false;
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('center').classList.remove('revealed');
+  document.getElementById('center').textContent = '✦';
+  document.documentElement.style.setProperty('--sin-color','#8b0000');
+  document.documentElement.style.setProperty('--sin-glow','#c00020');
+  // small delay then auto-spin for drama
+  setTimeout(startSpin, 300);
+}
+
+drawWheel(0, false);
+</script>
+</body>
+</html>
